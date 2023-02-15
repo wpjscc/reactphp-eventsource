@@ -104,6 +104,8 @@ class EventSource extends EventEmitter
      */
     private $reconnectTime = 3.0;
 
+    public $params;
+
     /**
      * The `EventSource` class is responsible for communication with the remote Server-Sent Events (SSE) endpoint.
      *
@@ -150,38 +152,33 @@ class EventSource extends EventEmitter
      * @param ?LoopInterface $loop
      * @throws \InvalidArgumentException for invalid URL
      */
-    public function __construct($url, Browser $browser = null, LoopInterface $loop = null)
+    public function __construct($params, Browser $browser = null, LoopInterface $loop = null)
     {
-        $parts = parse_url($url);
-        if (!isset($parts['scheme'], $parts['host']) || !in_array($parts['scheme'], array('http', 'https'))) {
-            throw new \InvalidArgumentException();
-        }
-
+        $this->params = $params;
         $this->loop = $loop ?: Loop::get();
         if ($browser === null) {
             $browser = new Browser(null, $this->loop);
         }
         $this->browser = $browser->withRejectErrorResponse(false);
-        $this->url = $url;
 
         $this->readyState = self::CONNECTING;
-        $this->request();
     }
 
-    private function request()
+    public function request()
     {
-        $headers = array(
+        $header = $this->params[2] ?? [];
+        $headers = array_merge(array(
             'Accept' => 'text/event-stream',
             'Cache-Control' => 'no-cache'
-        );
+        ), $header);
         if ($this->lastEventId !== '') {
             $headers['Last-Event-ID'] = $this->lastEventId;
         }
 
+        $this->params[2] = $headers;
+
         $this->request = $this->browser->requestStreaming(
-            'GET',
-            $this->url,
-            $headers
+            ...$this->params
         );
         $this->request->then(function (ResponseInterface $response) {
             if ($response->getStatusCode() !== 200) {
