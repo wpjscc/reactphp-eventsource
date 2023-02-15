@@ -162,6 +162,9 @@ class EventSource extends EventEmitter
         $this->browser = $browser->withRejectErrorResponse(false);
 
         $this->readyState = self::CONNECTING;
+
+        $this->request();
+
     }
 
     public function request()
