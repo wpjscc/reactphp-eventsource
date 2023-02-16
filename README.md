@@ -1,3 +1,74 @@
+
+```
+composer require wpjscc/reactphp-eventsource -vvv dev-master
+```
+
+```
+try {
+    $result = React\Async\await(translate('Meet Winter CMS'));
+    // promise successfully fulfilled with $result
+    echo 'Result: ' . $result;
+} catch (Throwable $e) {
+    // promise rejected with $e
+    echo 'Error: ' . $e->getMessage();
+}
+
+function translate($text) {
+    $deferred = new React\Promise\Deferred();
+    $es = new \Clue\React\EventSource\EventSource([
+        "POST",
+        'https://api.openai.com/v1/completions',
+        [
+            'Authorization' => 'Bearer sk-bdRUebZTlQpQndm1hhmRT3BlbkFJOqRLYJoV4u4eWY3APC',
+            'Content-Type' => 'application/json',
+        ],
+        json_encode([
+            'model' => 'text-davinci-003',
+            // 'model' => 'text-davinci-002-render',
+            'prompt' => "Translate into Chinese and keep the source code
+
+            ```
+            
+           $text
+            
+            
+            ```",
+            'temperature' => 0,
+            "max_tokens" => 1500,
+            "frequency_penalty" => 0,
+            "presence_penalty" => 0.6,
+            "stream" => true,
+         ])
+    ]);
+    
+    
+    $es->on('open', function () {
+        echo 'open';
+    });
+    $replay = '';
+    $es->on('message', function (\Clue\React\EventSource\MessageEvent $message) use (&$replay) {
+        $json = json_decode($message->data, true);
+        if ($json) {
+            $replay .= $json['choices'][0]['text'];
+            echo $json['choices'][0]['text']."\n";
+        } else {
+            echo $message->data;
+        }
+    });
+    
+    
+    $es->on('error', function ($e) use ($es, $deferred, &$replay) {
+        $es->readyState = \Clue\React\EventSource\EventSource::CLOSED;
+        $deferred->resolve($replay);
+        echo $e->getMessage();
+    });
+
+    return $deferred->promise();
+}
+
+
+```
+
 # clue/reactphp-eventsource
 
 [![CI status](https://github.com/clue/reactphp-eventsource/actions/workflows/ci.yml/badge.svg)](https://github.com/clue/reactphp-eventsource/actions)
