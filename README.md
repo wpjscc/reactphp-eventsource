@@ -27,11 +27,8 @@ function translate($text) {
             // 'model' => 'text-davinci-002-render',
             'prompt' => "Translate into Chinese and keep the source code
 
-            ```
-            
+            ```md
            $text
-            
-            
             ```",
             'temperature' => 0,
             "max_tokens" => 1500,
